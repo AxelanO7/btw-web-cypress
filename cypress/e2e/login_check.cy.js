@@ -1,34 +1,24 @@
-describe("Dashboard Check with Programmatic Login", () => {
+describe("Login Check with Programmatic Login", () => {
   const email = "abigaildw0@gmail.com";
   const password = "mahalbanget@1";
 
   beforeEach(() => {
-    // cy.login() menggunakan cy.session() di dalamnya.
-    // Login API hanya akan dipanggil sekali untuk kredensial yang sama,
-    // pengujian selanjutnya akan me-restore session dari cache.
+    // cy.login() uses cy.session() internally.
     cy.login(email, password);
   });
 
-  it("Harus bisa membuka halaman utama dan melanjutkan ke test pembayaran", () => {
-    // Setelah session di-restore (atau setelah login API sukses),
-    // arahkan langsung ke halaman utama.
-    cy.visit("https://app-v4.btwazure.com/");
+  it("Should navigate to homepage after successful login", () => {
+    // After session is restored, directly go to the homepage.
+    cy.visit("https://app-v4.btwazure.com/", { timeout: 30000 });
 
-    // Verifikasi bahwa URL sudah benar
+    // Verify the URL is correct
     cy.url().should("eq", "https://app-v4.btwazure.com/");
-
-    // Anda dapat menambahkan assertion yang menandakan login berhasil di UI (seperti foto profil, menu tertentu)
-    // cy.get('.profile-menu').should('be.visible');
-
-    // Jika ada elemen profil:
-    // cy.get('.profile-container').should('be.visible');
-    // cy.get('.user-balance').should('exist');
   });
 
-  it("Test case kedua untuk mendemonstrasikan session", () => {
-    // Pada test case kedua ini, API login TIDAK akan dipanggil lagi.
-    // Cypress akan langsung me-restore token/cookie dari session.
-    cy.visit("https://app-v4.btwazure.com/");
+  it("Second test case to demonstrate session caching mechanism", () => {
+    // In this second test case, the login API will NOT be called again.
+    // Cypress will instantly restore the cached session token/cookie.
+    cy.visit("https://app-v4.btwazure.com/", { timeout: 30000 });
     cy.url().should("eq", "https://app-v4.btwazure.com/");
   });
 });
