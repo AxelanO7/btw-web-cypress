@@ -27,13 +27,33 @@ Cypress.Commands.add("login", (email, password) => {
         // Pastikan response berhasil
         expect(response.status).to.eq(200);
 
-        // Simpan token ke localStorage/cookie tergantung implementasi aplikasi
-        // Contoh jika aplikasi menggunakan localStorage:
-        const token = response.body.token || response.body.data.token;
-        window.localStorage.setItem("auth_token", token);
+        // Cypress cy.session() mulai dari "about:blank".
+        // Agar localStorage tersimpan di domain yang benar, kita harus visit dulu (meski tidak login),
+        // atau gunakan cy.origin() jika berbeda domain.
+        cy.visit("https://app-v4.btwazure.com/");
 
-        // Jika aplikasi menggunakan cookie, gunakan cy.setCookie
-        // cy.setCookie('session_id', token);
+        // Simpan token ke localStorage. Coba cari tahu nama KEY yang tepat yang dipakai front-end.
+        // Bisa "token", "auth_token", "access_token", "user", dst.
+        cy.window().then((window) => {
+          // Ambil token dari body. Sesuaikan letak path json aslinya!
+          // (Misal: response.body.data.token)
+          const token =
+            response.body.token ||
+            (response.body.data && response.body.data.token);
+
+          if (token) {
+            window.localStorage.setItem("auth_token", token);
+            window.localStorage.setItem("token", token); // Coba key alternatif "token"
+            window.localStorage.setItem("access_token", token); // Coba key alternatif "access_token"
+          } else {
+            cy.log("WARNING: Token tidak ditemukan di payload API response!");
+            console.log("Login Response:", response.body);
+          }
+        });
+
+        // Jika frontend sebenarnya menggunakan Cookie, buka komentar ini:
+        // const cookieToken = token;
+        // cy.setCookie('token', cookieToken);
       });
     },
     {
