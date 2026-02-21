@@ -14,4 +14,11 @@ describe("Login Check with Programmatic Login", () => {
     // Verify the URL is correct
     cy.url().should("eq", "https://app-v4.btwazure.com/");
   });
+
+  it("Second test case to demonstrate session caching mechanism", () => {
+    // In this second test case, the login API will NOT be called again.
+    // Cypress will instantly restore the cached session token/cookie.
+    cy.visit("https://app-v4.btwazure.com/", { timeout: 30000 });
+    cy.url().should("eq", "https://app-v4.btwazure.com/");
+  });
 });
