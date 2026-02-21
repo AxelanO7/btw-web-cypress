@@ -10,7 +10,7 @@
 
 Cypress.Commands.add("login", (email, password) => {
   cy.session(
-    [email, password],
+    [email, password, "force_login_v1"],
     () => {
       // Perform programmatic login via API to bypass Cloudflare Captcha
       // Replace the URL with the actual login API endpoint of Btwedutech
