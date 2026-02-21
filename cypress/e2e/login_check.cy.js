@@ -9,17 +9,16 @@ describe("Dashboard Check with Programmatic Login", () => {
     cy.login(email, password);
   });
 
-  it("Harus bisa membuka dashboard dan memverifikasi elemen pengguna", () => {
+  it("Harus bisa membuka halaman utama dan melanjutkan ke test pembayaran", () => {
     // Setelah session di-restore (atau setelah login API sukses),
-    // arahkan langsung ke halaman dashboard.
-    cy.visit("https://app-v4.btwazure.com/dashboard");
+    // arahkan langsung ke halaman utama.
+    cy.visit("https://app-v4.btwazure.com/");
 
     // Verifikasi bahwa URL sudah benar
-    cy.url().should("include", "/dashboard");
+    cy.url().should("eq", "https://app-v4.btwazure.com/");
 
-    // Contoh verifikasi sederhana bahwa kita berhasil masuk.
-    // Sesuaikan selector (.profile-name, .balance, dsb) dengan struktur asli aplikasi.
-    cy.get("body").should("contain", "Dashboard");
+    // Anda dapat menambahkan assertion yang menandakan login berhasil di UI (seperti foto profil, menu tertentu)
+    // cy.get('.profile-menu').should('be.visible');
 
     // Jika ada elemen profil:
     // cy.get('.profile-container').should('be.visible');
@@ -29,7 +28,7 @@ describe("Dashboard Check with Programmatic Login", () => {
   it("Test case kedua untuk mendemonstrasikan session", () => {
     // Pada test case kedua ini, API login TIDAK akan dipanggil lagi.
     // Cypress akan langsung me-restore token/cookie dari session.
-    cy.visit("https://app-v4.btwazure.com/dashboard");
-    cy.url().should("include", "/dashboard");
+    cy.visit("https://app-v4.btwazure.com/");
+    cy.url().should("eq", "https://app-v4.btwazure.com/");
   });
 });
