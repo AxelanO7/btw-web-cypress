@@ -12,28 +12,44 @@ describe("Tryout Flow with Programmatic Login", () => {
     cy.visit("https://app-v4.btwazure.com/tryout", { timeout: 30000 });
     cy.url().should("include", "/tryout");
 
-    cy.get("#root button:nth-child(1) p.text-xs").click();
+    cy.intercept("POST", "**/w/v2/exam/get-questions*").as("getQuestions");
+
+    cy.get("#root button:nth-child(2) p.text-xs").click();
     cy.get("#root button.bg-indigo-600").click();
 
-    // Looping untuk semua pertanyaan tryout
-    // Sesuaikan totalQuestions dengan jumlah soal sebenarnya pada tryout (misal: 155 untuk SNBT)
-    const totalQuestions = 5;
+    cy.wait("@getQuestions").then((interception) => {
+      const responseBody = interception.response.body;
+      let totalQuestions = 0;
 
-    for (let i = 1; i <= totalQuestions; i++) {
-      // Pastikan elemen opsi A muncul sebelum diklik
-      cy.get(`#answer_${i}_A`, { timeout: 10000 }).should("exist");
-
-      // Pilih opsi A dengan menggunakan force: true agar menghindari kendala elemen dalam (seperti div/label)
-      cy.get("#btn-optionA-exam").click({ force: true, multiple: true });
-      cy.get(`#answer_${i}_A`).check({ force: true });
-
-      // Lanjut ke soal berikutnya jika bukan soal terakhir
-      if (i < totalQuestions) {
-        cy.get("#btn-next-exam").click();
+      // Kalkulasi total pertanyaan dari parameter question_total yang terdapat dalam data.subjects
+      if (responseBody && responseBody.data && responseBody.data.subjects) {
+        totalQuestions = responseBody.data.subjects.reduce(
+          (acc, subject) => acc + (subject.question_total || 0),
+          0,
+        );
       } else {
-        // Action tambahan saat mencapai soal terakhir (misalnya untuk submit ujian)
-        // cy.get('#btn-finish-exam').click();
+        // Default jika response tidak berformat seperti yang diharapkan
+        totalQuestions = 30;
       }
-    }
+
+      cy.log(`Total questions fetched from API: ${totalQuestions}`);
+
+      for (let i = 1; i <= totalQuestions; i++) {
+        // Pastikan elemen opsi A muncul sebelum diklik
+        cy.get(`#answer_${i}_A`, { timeout: 10000 }).should("exist");
+
+        // Pilih opsi A dengan menggunakan force: true agar menghindari kendala elemen dalam (seperti div/label)
+        cy.get("#btn-optionA-exam").click({ force: true, multiple: true });
+        cy.get(`#answer_${i}_A`).check({ force: true });
+
+        // Lanjut ke soal berikutnya jika bukan soal terakhir
+        if (i < totalQuestions) {
+          cy.get("#btn-next-exam").click();
+        } else {
+          // Action tambahan saat mencapai soal terakhir (misalnya untuk submit ujian)
+          // cy.get('#btn-finish-exam').click();
+        }
+      }
+    });
   });
 });
