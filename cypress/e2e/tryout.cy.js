@@ -1,4 +1,4 @@
-describe("SNBT Tryout Product Purchase", () => {
+describe("Tryout Flow with Programmatic Login", () => {
   const email = "abigaildw0@gmail.com";
   const password = "mahalbanget@1";
   const captcha =
@@ -8,13 +8,32 @@ describe("SNBT Tryout Product Purchase", () => {
     cy.login(email, password, captcha);
   });
 
-  it("Should be able to select SNBT product and proceed to payment", () => {
-    cy.visit("https://app-v4.btwazure.com/", { timeout: 30000 });
-    cy.url().should("eq", "https://app-v4.btwazure.com/");
+  it("Should navigate to tryout page after successful login", () => {
+    cy.visit("https://app-v4.btwazure.com/tryout", { timeout: 30000 });
+    cy.url().should("include", "/tryout");
 
-    cy.get("#program_list div:nth-child(2) > button.text-white").click();
-    cy.get("#root div.flex.rounded-full button.text-white").click();
-    cy.get("#btn-buy-popup").click();
-    cy.get("#root div.rounded-t-lg svg.lucide").click();
+    cy.get("#root button:nth-child(1) p.text-xs").click();
+    cy.get("#root button.bg-indigo-600").click();
+
+    // Looping untuk semua pertanyaan tryout
+    // Sesuaikan totalQuestions dengan jumlah soal sebenarnya pada tryout (misal: 155 untuk SNBT)
+    const totalQuestions = 5;
+
+    for (let i = 1; i <= totalQuestions; i++) {
+      // Pastikan elemen opsi A muncul sebelum diklik
+      cy.get(`#answer_${i}_A`, { timeout: 10000 }).should("exist");
+
+      // Pilih opsi A dengan menggunakan force: true agar menghindari kendala elemen dalam (seperti div/label)
+      cy.get("#btn-optionA-exam").click({ force: true, multiple: true });
+      cy.get(`#answer_${i}_A`).check({ force: true });
+
+      // Lanjut ke soal berikutnya jika bukan soal terakhir
+      if (i < totalQuestions) {
+        cy.get("#btn-next-exam").click();
+      } else {
+        // Action tambahan saat mencapai soal terakhir (misalnya untuk submit ujian)
+        // cy.get('#btn-finish-exam').click();
+      }
+    }
   });
 });
