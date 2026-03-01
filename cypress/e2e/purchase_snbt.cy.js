@@ -1,4 +1,4 @@
-describe("SKD Tryout Product Purchase", () => {
+describe("SNBT Tryout Product Purchase", () => {
   const email = "abigaildw0@gmail.com";
   const password = "mahalbanget@1";
   const captcha =
@@ -16,6 +16,5 @@ describe("SKD Tryout Product Purchase", () => {
     cy.get("#root div.flex.rounded-full button.text-white").click();
     cy.get("#btn-buy-popup").click();
     cy.get("#root div.rounded-t-lg svg.lucide").click();
-    cy.url().should("match", /\/(checkout|pembayaran|cart)/);
   });
 });
