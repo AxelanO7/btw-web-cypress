@@ -1,4 +1,4 @@
-describe("Record Feature", () => {
+describe("SKD Tryout Product Purchase", () => {
   const email = "abigaildw0@gmail.com";
   const password = "mahalbanget@1";
   const captcha =
@@ -8,8 +8,14 @@ describe("Record Feature", () => {
     cy.login(email, password, captcha);
   });
 
-  it("Should navigate to homepage after successful login", () => {
+  it("Should be able to select SKD CPNS product and proceed to payment", () => {
     cy.visit("https://app-v4.btwazure.com/", { timeout: 30000 });
     cy.url().should("eq", "https://app-v4.btwazure.com/");
+
+    cy.get("#program_list div:nth-child(2) > button.text-white").click();
+    cy.get("#root div.flex.rounded-full button.text-white").click();
+    cy.get("#btn-buy-popup").click();
+    cy.get("#root div.rounded-t-lg svg.lucide").click();
+    cy.url().should("match", /\/(checkout|pembayaran|cart)/);
   });
 });
