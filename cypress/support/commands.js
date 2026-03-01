@@ -8,20 +8,18 @@
 // https://on.cypress.io/custom-commands
 // ***********************************************
 
-Cypress.Commands.add("login", (email, password) => {
+Cypress.Commands.add("login", (email, password, captchaCode) => {
   cy.session(
-    [email, password, "force_login_v1"],
+    [email, password, captchaCode],
     () => {
       // Perform programmatic login via API to bypass Cloudflare Captcha
-      // Replace the URL with the actual login API endpoint of Btwedutech
       cy.request({
         method: "POST",
         url: "https://api-v2.btwazure.com/w/v2/auth/login",
         body: {
           username: email,
           password: password,
-          captcha_code:
-            "0.tHl9hZkDBU445EDgSMPn6ZIHgW_WkQzJUYJGrDFDSiKf0phtONiw_buiTu36VgSU5Ahm_PScVtkl5qFGf08w5gpHLQnN_06GHuVW5UfQRpp0H2oiXoCV1Lg-HN77PXCHAMgyOnh_pmAfIGx1Yb7_pnHHzUiuNRos_U06m4yV4wY7MGc40uet6vJ8o5qJ7h0GQlPK9VRLDNPSzYrGPzVZPWJmcF9SvnDqK75wMBEXjffcaLx4GW7W__4FKZBenhCOYL3oMM6rlM6lZYLP0TFJTXFz5ylmcUucw5S2p4zM5t6heSFlLpT_M6t9BvhEHvLjH0MhtLkrdxvrkPN7xWMK5K6imHLr8MylsyNzaLry0IkxeVa0p_YGTLKi0xuILQ44Zgoml0l8Rv4MNLbljtxOhTQiTxT2JqXg1xNPiJQNHWLCkOqdCZNkPH6bK8sK-pOVX1J_QH7wy2dswXtta9oFrT9O8aR4VFNTXzbbnIau6CvJOnmcCiCP98_n-k1F0pKUlTPdIDtdGA7Xrx8bH3aynL9SauOFQC6IvE8Fo6TZKJElzlv3XDQNepWTJ4bFTSTZOs5fp_HF1zjr6HKCNbJD3xCheRUKmsmPVpwnM8cR_yVkvMwEgRUb9gPFPdVNENq0wcfi-I51tHSnxe1rILfJBNX632Z3YmHNXjnEPJYaZNAvl1p0dQSCvYZSUWZnzXrDeFgjh7_4djlyA-5p8-iTbOxuolIFcMvL9RrK00whhGR-mm7bBfSYBiJEtT82tqOHrTmUv3Gb4NCimL7f4kIxdFg-SYT2_nadvafQk1x1WJAZMRBdQFEVOgUwm4tL5NL4p5Rcv5BHuneiOOz5TmvXh8UOYRPlUcFEdDW_6JOAHP7UAGxIbP4J8ejALTi0ZU_O1mM02JJGu_hykHY_y_n9iSKSg3YrQ7_OZlp0etLnNbdlkD5Pd9Cz-Ige1XfaRhN-.UOJClnqsExUGyHlnfrfATg.cf1fcd1434f33baca668e2a6c6369f3850d65daa3c2cf6fb5b1814835027efb4",
+          captcha_code: captchaCode,
         },
       }).then((response) => {
         // Pastikan response berhasil
@@ -29,31 +27,29 @@ Cypress.Commands.add("login", (email, password) => {
 
         // Cypress cy.session() mulai dari "about:blank".
         // Agar localStorage tersimpan di domain yang benar, kita harus visit dulu (meski tidak login),
-        // atau gunakan cy.origin() jika berbeda domain.
         cy.visit("https://app-v4.btwazure.com/");
 
-        // Simpan token ke localStorage. Coba cari tahu nama KEY yang tepat yang dipakai front-end.
-        // Bisa "token", "auth_token", "access_token", "user", dst.
+        // Simpan token dan refresh_token ke localStorage sesuai screenshot
         cy.window().then((window) => {
-          // Ambil token dari body. Sesuaikan letak path json aslinya!
-          // (Misal: response.body.data.token)
-          const token =
-            response.body.token ||
-            (response.body.data && response.body.data.token);
+          // Response payload biasanya ada di response.body atau response.body.data
+          const data = response.body.data || response.body;
+          const token = data.token;
+          const refresh_token = data.refresh_token;
 
           if (token) {
-            window.localStorage.setItem("auth_token", token);
-            window.localStorage.setItem("token", token); // Coba key alternatif "token"
-            window.localStorage.setItem("access_token", token); // Coba key alternatif "access_token"
+            window.localStorage.setItem("token", token);
           } else {
             cy.log("WARNING: Token tidak ditemukan di payload API response!");
-            console.log("Login Response:", response.body);
+          }
+
+          if (refresh_token) {
+            window.localStorage.setItem("refresh_token", refresh_token);
+          } else {
+            cy.log(
+              "WARNING: Refresh Token tidak ditemukan di payload API response!",
+            );
           }
         });
-
-        // Jika frontend sebenarnya menggunakan Cookie, buka komentar ini:
-        // const cookieToken = token;
-        // cy.setCookie('token', cookieToken);
       });
     },
     {
