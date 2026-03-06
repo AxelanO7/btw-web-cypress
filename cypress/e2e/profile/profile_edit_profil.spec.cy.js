@@ -41,7 +41,7 @@ const loginByUi = () => {
 describe("Profile Edit Module", () => {
   beforeEach(() => {
     loginByUi();
-    cy.visit("/profil/edit");
+    cy.visit("/edit-profil");
     cy.get(tid("profile.edit.page")).should("be.visible");
   });
 
