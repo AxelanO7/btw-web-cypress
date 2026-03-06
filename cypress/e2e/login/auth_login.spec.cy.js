@@ -17,7 +17,7 @@ describe("Auth Login Module", () => {
    * case starts in a clean state.
    */
   beforeEach(() => {
-    cy.visit("https://btwedutech.com/masuk");
+    cy.visit("https://app-v4.btwazure.com/masuk");
   });
 
 //   it("TC-LOGIN-02 - Email kosong", () => {
