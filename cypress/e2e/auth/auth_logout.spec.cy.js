@@ -1,32 +1,5 @@
-// Generated Cypress spec skeleton for BTW Edutech.
-// Assumption: the app exposes stable `data-testid` selectors following the naming
-// convention discussed earlier (e.g. auth.login.email, learning.kelas.page, etc).
-// Update selectors/assertions if the real app differs.
-//
-// Required Cypress env variables (set in cypress.env.json or CI):
-// - VALID_USER_EMAIL
-// - VALID_USER_PASSWORD
-//
-// Optional env variables depending on your data:
-// - INVALID_USER_EMAIL
-// - INVALID_USER_PASSWORD
-// - TEST_NEW_PASSWORD
-// - TEST_PACKAGE_ID
-// - TEST_CLASS_ID
-// - TEST_MATERI_ID
-// - TEST_TRYOUT_ID
-// - TEST_PSIKOTES_ID
-//
-// Note: If you later add support commands (cy.loginByUi / cy.loginByApi / cy.session),
-// you can refactor the local helpers in each file into reusable commands.
-
-const tid = (id) => `[data-testid="${id}"]`;
-
-const getEnv = (key) => {
-  const value = Cypress.env(key);
-  expect(value, `${key} must be provided in Cypress env`).to.be.a('string').and.not.be.empty;
-  return value;
-};
+// Cypress E2E spec for BTW Edutech - Auth Logout Module
+// The logout button is on the /profil page, labeled "Keluar"
 
 const loginByUi = () => {
   const email = "abigaildw0@gmail.com";
@@ -37,34 +10,57 @@ const loginByUi = () => {
   cy.login(email, password, captcha);
 };
 
-describe('Auth Logout Module', () => {
+describe("Auth Logout Module", () => {
   beforeEach(() => {
     loginByUi();
   });
 
-  it('TC-LOGOUT-01 - Logout berhasil', () => {
-    cy.get(tid('auth.logout.trigger')).click();
+  it("TC-LOGOUT-01 - Logout berhasil", () => {
+    // Navigate to profile page where the logout button lives
+    cy.visit("/profil");
+    cy.contains("Profil Saya").should("be.visible");
 
-    cy.get('body').then(($body) => {
-      if ($body.find(tid('auth.logout.confirm')).length) {
-        cy.get(tid('auth.logout.confirm')).click();
+    // Click the "Keluar" button
+    cy.contains("button", "Keluar").should("be.visible").click();
+
+    // Handle potential confirmation dialog
+    cy.get("body").then(($body) => {
+      if (
+        $body.find('button:contains("Ya")').length ||
+        $body.find('button:contains("Keluar")').length > 1
+      ) {
+        // If a confirmation dialog appeared, click the confirm button
+        cy.contains("button", "Ya").click({ timeout: 5000 });
       }
     });
 
-    cy.url().should('include', '/masuk');
+    // Should redirect to login page
+    cy.url({ timeout: 15000 }).should("include", "/masuk");
   });
 
-  it('TC-LOGOUT-02 - Session dibersihkan setelah logout', () => {
-    cy.get(tid('auth.logout.trigger')).click();
+  it("TC-LOGOUT-02 - Session dibersihkan setelah logout", () => {
+    // Navigate to profile page where the logout button lives
+    cy.visit("/profil");
+    cy.contains("Profil Saya").should("be.visible");
 
-    cy.get('body').then(($body) => {
-      if ($body.find(tid('auth.logout.confirm')).length) {
-        cy.get(tid('auth.logout.confirm')).click();
+    // Click the "Keluar" button
+    cy.contains("button", "Keluar").should("be.visible").click();
+
+    // Handle potential confirmation dialog
+    cy.get("body").then(($body) => {
+      if (
+        $body.find('button:contains("Ya")').length ||
+        $body.find('button:contains("Keluar")').length > 1
+      ) {
+        cy.contains("button", "Ya").click({ timeout: 5000 });
       }
     });
 
-    cy.url().should('include', '/masuk');
+    // Should redirect to login page
+    cy.url({ timeout: 15000 }).should("include", "/masuk");
+
+    // After logout, reloading should stay on the login page (session is cleared)
     cy.reload();
-    cy.url().should('include', '/masuk');
+    cy.url().should("include", "/masuk");
   });
 });
