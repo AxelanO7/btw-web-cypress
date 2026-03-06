@@ -32,13 +32,16 @@ const findBrowser = () => {
 };
 
 module.exports = defineConfig({
-  allowCypressEnv: false,
+  allowCypressEnv: true,
   chromeWebSecurity: false,
   userAgent:
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
 
   e2e: {
     experimentalStudio: true,
+    baseUrl: "https://app-v4.btwazure.com",
+    specPattern: "cypress/e2e/**/*.spec.cy.js",
+    supportFile: "cypress/support/e2e.js",
     setupNodeEvents(on, config) {
       on("before:browser:launch", (browser = {}, launchOptions) => {
         // Hiding the fact that we are using an automated browser
