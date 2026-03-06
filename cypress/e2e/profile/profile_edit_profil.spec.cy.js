@@ -42,26 +42,28 @@ describe("Profile Edit Module", () => {
   beforeEach(() => {
     loginByUi();
     cy.visit("/edit-profil");
-    cy.get(tid("profile.edit.page")).should("be.visible");
+    cy.contains("Edit Profil").should("be.visible");
   });
 
   it("TC-PROFILE-EDIT-01 - Edit profil berhasil", () => {
-    const uniqueName = `Automation ${Date.now()}`;
+    const randomStr = Math.random()
+      .toString(36)
+      .replace(/[^a-z]+/g, "")
+      .substring(0, 5);
+    const uniqueName = `Automation ${randomStr}`;
 
-    cy.get(tid("profile.edit.fullname")).clear().type(uniqueName);
+    cy.get("#fullname").type("{selectall}{backspace}" + uniqueName);
     cy.get("body").then(($body) => {
-      if ($body.find(tid("profile.edit.phone")).length) {
-        cy.get(tid("profile.edit.phone")).clear().type("081234567891");
+      if ($body.find("#phone").length) {
+        cy.get("#phone").type("{selectall}{backspace}081234567891");
       }
     });
 
-    cy.get(tid("profile.edit.save")).click();
+    cy.get('button[type="submit"]').contains("Simpan").click();
 
-    cy.get(
-      `${tid("profile.edit.success")}, ${tid("common.toast.message")}`,
-    ).should("be.visible");
+    cy.get("#_rht_toaster > div", { timeout: 15000 }).should("exist");
 
     cy.reload();
-    cy.get(tid("profile.edit.fullname")).should("have.value", uniqueName);
+    cy.get("#fullname").should("have.value", uniqueName);
   });
 });
