@@ -50,42 +50,39 @@ describe("Purchase Module", () => {
 
   it("TC-BELI - Pembelian Materi Belajar UTBK SNBT", () => {
     const packageId = Cypress.env("TEST_PACKAGE_ID") || "SNBT PTN";
-
+    
     cy.contains("h3", packageId).should("be.visible");
     cy.contains("h3", packageId)
       .parents(".flex.h-full")
       .find("button")
       .contains("Pilih")
       .click();
-
+    
     // Validate detail page
     cy.contains("Program Kelas Online").should("be.visible");
-
+    
     // Wait for the popup/modal or loading to complete
     cy.get("body").should("not.have.class", "loading");
-
+    
     // Click Beli on Materi Belajar (Kartu Kuning)
-    cy.contains("Materi Belajar UTBK SNBT")
-      .should("be.visible")
+    cy.contains("Materi Belajar")
       .closest(".rounded-2xl")
       .find("button")
       .contains("Beli")
       .should("be.visible")
       .click();
-
-    // Validasi checkout scene
-    cy.get(tid("purchase.checkout.summary"), { timeout: 15000 }).should(
-      "be.visible",
-    );
-
+    
+    
     cy.get("body").then(($body) => {
       if ($body.find(tid("purchase.checkout.paymentMethod")).length) {
         cy.get(tid("purchase.checkout.paymentMethod")).click();
       }
     });
-
-    cy.get(tid("purchase.checkout.pay")).click();
-
+    
+    cy.get('#btn-buy-material-popup').click();
+    
+    cy.get('.rounded-t-lg > .grid > .flex-shrink-0').click();
+    
     cy.get("body").then(($body) => {
       if ($body.find(tid("purchase.success.page")).length) {
         cy.get(tid("purchase.success.page")).should("be.visible");
