@@ -61,9 +61,11 @@ describe("Learning Materi Module", () => {
   it("TC-MATERI-03 - Tandai materi selesai / progress berubah", () => {
     cy.get("body").then(($body) => {
       if (!$body.text().includes("Belum Ada Data")) {
-        cy.contains("Akses Materinya disini", { matchCase: false })
-          .first()
-          .click();
+        // cy.contains("Akses Materi & Quiznya", { matchCase: false })
+        //   .first()
+        //   .click();
+        cy.get(":nth-child(4) > .gap-4 > div > .font-vr-bold").click();
+        cy.get(".border-2 > .gap-2").should("be.visible").click();
         cy.get("body").then(($inner) => {
           if ($inner.text().includes("Selesai")) {
             cy.contains("Selesai").click();
@@ -73,5 +75,8 @@ describe("Learning Materi Module", () => {
         cy.log("Skipping - no materi available");
       }
     });
+    cy.get(
+      "#root div:nth-child(1) > div.justify-between > button.inline-flex",
+    ).click();
   });
 });
