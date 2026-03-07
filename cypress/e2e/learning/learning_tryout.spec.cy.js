@@ -1,33 +1,5 @@
-// Generated Cypress spec skeleton for BTW Edutech.
-// Assumption: the app exposes stable `data-testid` selectors following the naming
-// convention discussed earlier (e.g. auth.login.email, learning.kelas.page, etc).
-// Update selectors/assertions if the real app differs.
-//
-// Required Cypress env variables (set in cypress.env.json or CI):
-// - VALID_USER_EMAIL
-// - VALID_USER_PASSWORD
-//
-// Optional env variables depending on your data:
-// - INVALID_USER_EMAIL
-// - INVALID_USER_PASSWORD
-// - TEST_NEW_PASSWORD
-// - TEST_PACKAGE_ID
-// - TEST_CLASS_ID
-// - TEST_MATERI_ID
-// - TEST_TRYOUT_ID
-// - TEST_PSIKOTES_ID
-//
-// Note: If you later add support commands (cy.loginByUi / cy.loginByApi / cy.session),
-// you can refactor the local helpers in each file into reusable commands.
-
-const tid = (id) => `[data-testid="${id}"]`;
-
-const getEnv = (key) => {
-  const value = Cypress.env(key);
-  expect(value, `${key} must be provided in Cypress env`).to.be.a("string").and
-    .not.be.empty;
-  return value;
-};
+// Generated Cypress spec for BTW Edutech
+// Refaktor untuk Tryout dinamis dan randomizer
 
 const loginByUi = () => {
   const email = "abigaildw0@gmail.com";
@@ -40,50 +12,169 @@ const loginByUi = () => {
 
 describe("Learning Tryout Module", () => {
   beforeEach(() => {
+    // Langkah 1: Persiapan & Login
     loginByUi();
+
+    // Setup intercept API untuk mendapatkan soal agar bisa diekstrak datanya nanti
+    cy.intercept("POST", "**/w/v2/exam/get-questions*").as("getQuestions");
+
+    // Navigasi ke halaman tryout secara langsung
     cy.visit("/tryout");
-    cy.get("body", { timeout: 10000 }).should("be.visible");
+    cy.get("body", { timeout: 15000 }).should("be.visible");
   });
 
-  it("TC-TRYOUT-01/02/04/08 - Start, answer, submit, and view result tryout", () => {
-    cy.get("body").then(($body) => {
-      // Find a tryout category card (like "SKD CPNS" or "PTK" etc) by looking for "Progres Drilling"
-      if ($body.text().includes("Progres Drilling")) {
-        cy.contains("Progres Drilling").first().click();
+  it("Melakukan Pengerjaan Tryout Secara Dinamis dan Acak", () => {
+    // Langkah 2: Navigasi Dinamis Berdasarkan Package ID
+    const packageId = Cypress.env("TEST_PACKAGE_ID") || "SNBT PTN";
 
-        // Wait for detail page
-        cy.get("body", { timeout: 10000 }).then(($inner1) => {
-          if ($inner1.text().includes("Kerjakan")) {
-            cy.contains("Kerjakan").first().click();
+    // Cari kartu tryout yang relevan berdasarkan packageId dan klik kartu tersebut
+    cy.contains(packageId, { timeout: 15000 }).should("be.visible").click();
 
-            // Inside the tryout player
-            cy.contains("Simpan & Lanjut", { timeout: 15000 }).should(
-              "be.visible",
-            );
+    // Pastikan halaman Detail Modul berhasil termuat (menandakan list modul dapat terlihat)
+    cy.get("body", { timeout: 15000 }).should("be.visible");
 
-            // Answer question by clicking A
-            cy.contains("A.").click();
+    // Langkah 3: Memilih Modul "Belum Dikerjakan"
+    // Gunakan selector spesifik untuk mencari tombol "Kerjakan" pada modul yang tersedia
+    cy.get("button.bg-indigo-600:contains('Kerjakan')", { timeout: 15000 })
+      .should("be.visible")
+      .first()
+      .click();
 
-            // Click Next
-            cy.contains("Simpan & Lanjut").click();
-            cy.wait(1000); // Wait for transition
+    // Langkah 4: Logika Pengerjaan Soal dengan Randomizer (Sangat Krusial)
+    // Menunggu request get-questions untuk mendeteksi jumlah soal yang sebenarnya
+    cy.wait("@getQuestions", { timeout: 30000 }).then((interception) => {
+      const responseBody = interception.response.body;
+      let totalQuestions = 0;
 
-            // Click Submit
-            cy.contains("Selesai Ujian").click();
+      let questions = [];
 
-            // Confirm submit
-            cy.contains("Yakin", { timeout: 5000 })
-              .should("be.visible")
-              .click();
+      // Ekstraksi total pertanyaan (question_total) dan list pertanyaan dari payload response API
+      if (responseBody && responseBody.data) {
+        if (responseBody.data.subjects) {
+          totalQuestions = responseBody.data.subjects.reduce(
+            (acc, subject) => acc + (subject.question_total || 0),
+            0,
+          );
+        }
+        if (responseBody.data.questions) {
+          questions = responseBody.data.questions;
+        }
+      }
 
-            // Wait for Result page - should not be on question page anymore
-            cy.contains("Simpan & Lanjut").should("not.exist");
-          } else {
-            cy.log("Skipping - no tryout to Kerjakan");
+      if (totalQuestions === 0) {
+        // Default jika struktur response di luar dugaan
+        totalQuestions = 30;
+      }
+
+      cy.log(`Jumlah soal yang akan dikerjakan: ${totalQuestions}`);
+
+      // Iterasi for-loop untuk menjawab setiap nomor soal
+      for (let i = 1; i <= totalQuestions; i++) {
+        const questionData = questions[i - 1]; // Mengambil data soal saat ini
+        const answerType = questionData
+          ? questionData.answer_type
+          : "MULTIPLE_CHOICES";
+
+        // Tunggu komponen container jawaban muncul agar tidak flaky
+        cy.get(".option-answer", { timeout: 15000 }).should("be.visible");
+
+        if (answerType === "MULTIPLE_CHOICES") {
+          // Randomizer jawaban (A, B, C, D, E)
+          const options = ["A", "B", "C", "D", "E"];
+          const randomAnswer =
+            options[Math.floor(Math.random() * options.length)];
+
+          cy.log(
+            `Soal ke-${i} (MULTIPLE_CHOICES) dijawab dengan: ${randomAnswer}`,
+          );
+
+          cy.get("body").then(($body) => {
+            // Klik tombol kontainer jawaban secara acak
+            if ($body.find("#btn-option" + randomAnswer + "-exam").length > 0) {
+              cy.get("#btn-option" + randomAnswer + "-exam").click({
+                force: true,
+                multiple: true,
+              });
+            }
+            // Cek radio input sebagai fallback untuk memvalidasi input di sistem
+            if ($body.find(`#answer_${i}_${randomAnswer}`).length > 0) {
+              cy.get(`#answer_${i}_${randomAnswer}`).check({ force: true });
+            }
+          });
+        } else if (answerType === "CHECKBOX") {
+          cy.log(`Soal ke-${i} (CHECKBOX): Mencentang opsi`);
+          const optionId = questionData.option_ids[0];
+
+          cy.get("body").then(($body) => {
+            if ($body.find(`[for="answer_${i}_${optionId}"]`).length > 0) {
+              cy.get(`[for="answer_${i}_${optionId}"]`).click({ force: true });
+            }
+            if ($body.find(`#answer_${i}_${optionId}`).length > 0) {
+              cy.get(`#answer_${i}_${optionId}`).check({ force: true });
+            } else if ($body.find(`input[type="checkbox"]`).length > 0) {
+              // Fallback
+              cy.get(`input[type="checkbox"]`).first().check({ force: true });
+            }
+          });
+        } else if (answerType === "PERNYATAAN") {
+          cy.log(
+            `Soal ke-${i} (PERNYATAAN): Memilih Benar/Salah untuk setiap pernyataan`,
+          );
+          if (questionData.option_ids && questionData.option_ids.length > 0) {
+            questionData.option_ids.forEach((optId) => {
+              const ab = Math.random() < 0.5 ? "a" : "b"; // secara acak pilih benar (a) atau salah (b)
+              cy.get("body").then(($body) => {
+                // Radio untuk id="answer_a_30_48888" atau "answer_b_30_48888"
+                if ($body.find(`#answer_${ab}_${i}_${optId}`).length > 0) {
+                  cy.get(`#answer_${ab}_${i}_${optId}`).check({ force: true });
+                } else if (
+                  $body.find(`[for="answer_${ab}_${i}_${optId}"]`).length > 0
+                ) {
+                  cy.get(`[for="answer_${ab}_${i}_${optId}"]`).click({
+                    force: true,
+                  });
+                }
+              });
+            });
           }
-        });
-      } else {
-        cy.log("Skipping - no tryout categories available");
+        } else {
+          // Generic fallback logic apabila ada tipe soal lainnya
+          cy.get("body").then(($body) => {
+            if ($body.find('input[type="radio"]').length > 0) {
+              cy.get('input[type="radio"]').first().check({ force: true });
+            } else if ($body.find('input[type="checkbox"]').length > 0) {
+              cy.get('input[type="checkbox"]').first().check({ force: true });
+            }
+          });
+        }
+
+        // Evaluasi apakah berada di soal terakhir atau tidak
+        if (i < totalQuestions) {
+          // Navigasi ke soal selanjutnya jika belum selesai
+          cy.get("#btn-next-exam", { timeout: 15000 })
+            .should("be.visible")
+            .click({ force: true });
+        } else {
+          // Langkah 5: Submit Ujian (Selesai) pada interasi terakhir
+          cy.get("body").then(($body) => {
+            // Gunakan selector fleksibel apabila struktur ID berbeda sewaktu-waktu
+            if ($body.find("#btn-finish-exam").length > 0) {
+              cy.get("#btn-finish-exam").click({ force: true });
+            } else {
+              cy.contains("Selesai Ujian", { timeout: 15000 }).click({
+                force: true,
+              });
+            }
+          });
+
+          // Tangani modal konfirmasi ("Yakin")
+          cy.contains("Yakin", { timeout: 15000 })
+            .should("be.visible")
+            .click({ force: true });
+
+          // Asersi bahwa user tidak lagi di state ujian (elemen ujian sudah tidak ada/hilang)
+          cy.contains("Selesai Ujian", { timeout: 15000 }).should("not.exist");
+        }
       }
     });
   });
