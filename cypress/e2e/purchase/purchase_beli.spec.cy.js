@@ -48,7 +48,7 @@ describe("Purchase Module", () => {
     cy.visit("/beli");
   });
 
-  it("TC-BELI-01/03/05/06/07/09/11/12 - End-to-end pembelian paket", () => {
+  it("TC-BELI - Pembelian Materi Belajar UTBK SNBT", () => {
     const packageId = Cypress.env("TEST_PACKAGE_ID") || "SNBT PTN";
 
     cy.contains("h3", packageId).should("be.visible");
@@ -64,18 +64,70 @@ describe("Purchase Module", () => {
     // Wait for the popup/modal or loading to complete
     cy.get("body").should("not.have.class", "loading");
 
-    // Click Beli on Tryout Satuan
-    cy.contains("h2", "Tryout Satuan").should("be.visible");
-    cy.get("#unlocked-modules").should("be.visible").and("not.be.disabled");
-    cy.get("#unlocked-modules")
-      .parent()
+    // Click Beli on Materi Belajar (Kartu Kuning)
+    cy.contains("Materi Belajar UTBK SNBT")
+      .should("be.visible")
+      .closest(".rounded-2xl")
       .find("button")
       .contains("Beli")
+      .should("be.visible")
       .click();
 
-    // Wait for the next page or payment modal to load
-    cy.get("wait-for-checkout-scene", { timeout: 15000 }).should("be.visible");
-    cy.get(tid("purchase.checkout.summary")).should("be.visible");
+    // Validasi checkout scene
+    cy.get(tid("purchase.checkout.summary"), { timeout: 15000 }).should(
+      "be.visible",
+    );
+
+    cy.get("body").then(($body) => {
+      if ($body.find(tid("purchase.checkout.paymentMethod")).length) {
+        cy.get(tid("purchase.checkout.paymentMethod")).click();
+      }
+    });
+
+    cy.get(tid("purchase.checkout.pay")).click();
+
+    cy.get("body").then(($body) => {
+      if ($body.find(tid("purchase.success.page")).length) {
+        cy.get(tid("purchase.success.page")).should("be.visible");
+        cy.get(tid("purchase.success.orderId")).should("be.visible");
+      } else {
+        cy.get(tid("purchase.fail.page")).should("not.exist");
+      }
+    });
+  });
+
+  it("TC-BELI - Pembelian Tryout Satuan", () => {
+    const packageId = Cypress.env("TEST_PACKAGE_ID") || "SNBT PTN";
+
+    cy.contains("h3", packageId).should("be.visible");
+    cy.contains("h3", packageId)
+      .parents(".flex.h-full")
+      .find("button")
+      .contains("Pilih")
+      .click();
+
+    // Validate detail page
+    cy.contains("Program Kelas Online").should("be.visible");
+
+    // Wait for the popup/modal or loading to complete
+    cy.get("body").should("not.have.class", "loading");
+
+    // Click Beli on Tryout Satuan (Tombol Biru)
+    cy.contains("h2", "Tryout Satuan").should("be.visible");
+
+    // Using parent hierarchy to reliably hit the blue 'Beli' button beside the input
+    cy.contains("h2", "Tryout Satuan")
+      .parent()
+      .find('input[type="number"]')
+      .siblings("button")
+      .contains("Beli")
+      .should("be.visible")
+      .click();
+
+    // Validasi checkout scene
+    cy.get(tid("purchase.checkout.summary"), { timeout: 15000 }).should(
+      "be.visible",
+    );
 
     cy.get("body").then(($body) => {
       if ($body.find(tid("purchase.checkout.paymentMethod")).length) {
