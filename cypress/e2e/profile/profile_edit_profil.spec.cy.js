@@ -41,7 +41,10 @@ const loginByUi = () => {
 describe("Profile Edit Module", () => {
   beforeEach(() => {
     loginByUi();
+    cy.intercept("POST", "**/w/v2/profile/get-profile").as("getProfile");
     cy.visit("/edit-profil");
+    cy.wait("@getProfile");
+    cy.wait(2000); // Allow React state to settle after API fetch
     cy.contains("Edit Profil").should("be.visible");
   });
 
@@ -52,15 +55,43 @@ describe("Profile Edit Module", () => {
       .substring(0, 5);
     const uniqueName = `Automation ${randomStr}`;
 
-    cy.get("#fullname").type("{selectall}{backspace}" + uniqueName);
+    // Wait for the form to be populated by the API
+    cy.get("#fullname").should("not.have.value", "");
+    cy.get("#fullname").type("{selectall}{backspace}" + uniqueName, {
+      delay: 30,
+    });
+
     cy.get("body").then(($body) => {
       if ($body.find("#phone").length) {
-        cy.get("#phone").type("{selectall}{backspace}081234567891");
+        cy.get("#phone").type("{selectall}{backspace}081234567891", {
+          delay: 30,
+        });
       }
     });
 
+    // Re-select province, region, last_ed to trigger onChange and clear validation errors
+    // Use the inner input with force: true. Change value to ensure api is fired.
+    cy.intercept("GET", "**/location/province/*/region").as("getRegions");
+    cy.get("#province input[type='text']")
+      .type("BALI{downArrow}{enter}", { force: true })
+      .type("DKI JAKARTA{downArrow}{enter}", { force: true });
+
+    // Wait for the region API request inside react-select
+    cy.wait("@getRegions");
+
+    cy.get("#region input[type='text']").type(
+      "JAKARTA SELATAN{downArrow}{enter}",
+      { force: true },
+    );
+    cy.get("#last_ed input[type='text']").type("Strata{downArrow}{enter}", {
+      force: true,
+    });
+
+    cy.intercept("POST", "**/profile/update-profile").as("updateProfile");
     cy.get('button[type="submit"]').contains("Simpan").click();
 
+    // The endpoint might be /update or /update-profile. Let's just wait for toaster or network
+    cy.wait("@updateProfile").its("response.statusCode").should("eq", 200);
     cy.get("#_rht_toaster > div", { timeout: 15000 }).should("exist");
 
     cy.reload();
